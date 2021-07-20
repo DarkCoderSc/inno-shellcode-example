@@ -1,6 +1,6 @@
 # InnoSetup Execute Shellcode PoC
 
-[Screenshot 2021-07-20 at 19.10.40.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-20_at_19.10.40.png)
+![Screenshot 2021-07-20 at 19.10.40.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-20_at_19.10.40.png)
 
 This PoC demonstrate how to take advantage of InnoSetup scripting engine to run shellcode through Windows API.
 
@@ -144,4 +144,4 @@ https://www.virustotal.com/gui/file/697f7d55aa19e9dfaa5b86d8117c4f57adaba1ea252e
 
 3/69 (Mostly generic detection because of file reputation) / Likely FUD
 
-[Screenshot 2021-07-20 at 19.09.53.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-20_at_19.09.53.png)
+![Screenshot 2021-07-20 at 19.09.53.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-20_at_19.09.53.png)
