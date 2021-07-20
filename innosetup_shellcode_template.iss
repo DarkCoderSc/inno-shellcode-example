@@ -26,6 +26,7 @@ OutputBaseFilename=innomal
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+Uninstallable=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
