@@ -1,6 +1,6 @@
 # InnoSetup Execute Shellcode PoC
 
-![Screenshot 2021-07-21 at 16.05.10.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-21_at_16.05.10.png)
+![Screenshot 2021-07-21 at 16.05.10.png](https://www.phrozen.io/media/all/Screenshot_2021-07-20_at_19.09.53.png)
 
 This proof of concept demonstrate how to take advantage of InnoSetup Scripting Engine to host local/remote process shellcode payload then execute.
 
@@ -47,7 +47,7 @@ https://www.virustotal.com/gui/file/697f7d55aa19e9dfaa5b86d8117c4f57adaba1ea252e
 
 3/69 (Mostly generic detection because of file reputation) / Likely FUD
 
-![Screenshot 2021-07-20 at 19.09.53.png](https://s3.eu-central-1.amazonaws.com/www.phrozen.io/uploads/Screenshot_2021-07-20_at_19.09.53.png)
+![Screenshot 2021-07-20 at 19.09.53.png](https://www.phrozen.io/media/all/Screenshot_2021-07-20_at_19.09.53.png)
 
 ## VirusTotal Score (UPDATE: 21 JULY 2021)
 
