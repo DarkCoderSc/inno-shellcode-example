@@ -2,28 +2,28 @@
 
 ![Screenshot 2021-07-21 at 16.05.10.png](https://www.phrozen.io/media/all/Screenshot_2021-07-21_at_16.05.10.png)
 
-This proof of concept demonstrate how to take advantage of InnoSetup Scripting Engine to host local/remote process shellcode payload then execute.
+This proof of concept illustrates how the InnoSetup Scripting Engine can be utilized to host a local or remote process shellcode payload and then execute it.
 
-The idea behind this concept is to demonstrate the dangerosity of (self) installers. Not only they can contain malicious programsn, they can also run native code through their scripting engines and evade AV detections because of their natural aspect.
+The motivation behind this concept is to highlight the potential risks associated with (self) installers. Not only can they harbor malicious programs, but they can also execute native code through their scripting engines. This method could potentially evade antivirus detections due to their seemingly benign nature.
 
-The most difficult part was to understand how to use pointers/refs. Basically from this example, it is possible to create any kind of Malware from scratch (even more complex ones). Feel free to try, if you have any technical questions, feel free to ask for some help.
+The most challenging aspect of this project was understanding how to manipulate pointers and references. This example provides a foundation from which it is feasible to create any type of malware from scratch, including ones with increased complexity. Should you decide to experiment further, and encounter any technical queries, don't hesitate to ask for assistance.
 
 ## Parameters
 
-Parameters are located at the top of the InnoSetup Script File.
+The parameters can be found at the beginning of the InnoSetup Script File.
 
- * `SpawnNewProcess`: (1|0) : If set to `1`, payload will be stored and executed from a new process (default: notepad.exe). If set to `0`, the payload will be stored and executed from current InnoSetup Installer Process.
- * `SpawnProcessName`: (STR) : This parameter is only use if `SpawnNewProcess` parameter is set to `1`. Change this value with the desired process you want to spawn.
- * `verbose`: (1|0) : Define whether or not you want to output debug messages (Ex: from DbgView)
- * `Payload`: (HEX_STR) : Define the payload itself in hex format (aligned 2). Use the `-f hex` if using Msfvenom.
+* **SpawnNewProcess:** (1|0): If this is set to 1, the payload will be stored and executed from a newly spawned process (default: notepad.exe). If set to 0, the payload will be stored and executed from the current InnoSetup Installer Process.
+* **SpawnProcessName:** (STR): This parameter comes into play only if SpawnNewProcess is set to 1. You can modify this value to spawn the process of your choice.
+* **verbose:** (1|0): Use this parameter to determine whether you want to generate debug messages (for example, from DbgView).
+* **Payload:** (HEX_STR): This parameter is used to define the payload itself in hex format (aligned 2). If you're using Msfvenom, utilize the -f hex option.
 
 ## Example
 
-It is now very easy to create your own Setup with your own payload.
+Creating your own setup with a personalized payload is now straightforward.
 
-Just be sure to have your shellcode encoded in hex string then replace the `Payload` parameter with your payload.
+Ensure that your shellcode is encoded in a hex string, and then replace the Payload parameter with your payload.
 
-An example with Msfvenom would be:
+Here's an illustrative example using Msfvenom:
 
 `msfvenom -p <payload> -a x86 --platform Windows <parameters> EXITFUNC=thread -f hex`
 
@@ -37,22 +37,22 @@ Example: `msfvenom -p windows/exec -a x86 --platform Windows CMD=calc.exe EXITFU
 
 ![Screenshot 2021-07-21 at 16.04.04.png](https://www.phrozen.io/media/all/Screenshot_2021-07-21_at_16.04.04.png)
 
-Adjust other parameters if you want/need then you can build your setup application and enjoy the result.
+You can modify the other parameters as per your needs before building your setup application to appreciate the result.
 
-Notice: If using `SpawnNewProcess`, I would highly recommend using the `ExitProcess` EXITFUNC method instead of `thread` to close the entired spawned process.
+Please note: If you are using the **SpawnNewProcess** parameter, it is highly recommended to use the `ExitProcess` **EXITFUNC** method to terminate the entire spawned process, as opposed to using thread.
 
 ## VirusTotal Score (20 JULY 2021)
 
 https://www.virustotal.com/gui/file/697f7d55aa19e9dfaa5b86d8117c4f57adaba1ea252e008d7760e0a192515ac8/detection
 
-3/69 (Mostly generic detection because of file reputation) / Likely FUD
+The current detection rate stands at 3/69, which is mostly due to generic detection because of the file's reputation. Therefore, it's highly probable that the file is fully undetectable (FUD).
 
 ![Screenshot 2021-07-20 at 19.09.53.png](https://www.phrozen.io/media/all/Screenshot_2021-07-20_at_19.09.53.png)
 
 ## VirusTotal Score (UPDATE: 21 JULY 2021)
 
-Bellow the result of a setup scan using a reverse shell payload from Msfvenom without any encoding schema:
+Below are the results of a setup scan using a reverse shell payload from Msfvenom, without any encoding schema applied:
 
 https://www.virustotal.com/gui/file/2723ba8196721a3fd8b792b195dc20928d53d0e8b21c47da353b894cace847b9/detection
 
-(4/69) - It evade all comonly used AV Software.
+With a detection rate of 4 out of 69, it successfully evades the majority of commonly used antivirus software.
